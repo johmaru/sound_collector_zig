@@ -41,6 +41,14 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("JZlog", jzlog_module);
     exe.root_module.addImport("clap", clap.module("clap"));
 
+    exe.linkSystemLibrary("avcodec");
+    exe.linkSystemLibrary("avformat");
+    exe.linkSystemLibrary("avutil");
+
+    exe.linkLibC();
+    exe.addIncludePath(.{ .cwd_relative = "/usr/include" });
+    exe.addIncludePath(.{ .cwd_relative = "/usr/include/x86_64-linux-gnu/" });
+
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).

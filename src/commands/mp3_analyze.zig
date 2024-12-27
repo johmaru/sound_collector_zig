@@ -1,5 +1,10 @@
 const std = @import("std");
 const logger = @import("JZlog");
+const c = @cImport({
+    @cInclude("libavcodec/avcodec.h");
+    @cInclude("libavformat/avformat.h");
+    @cInclude("libavutil/avutil.h");
+});
 
 pub const Analyze = struct {
     const bitrate: [16]u32 = .{ 0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0 };
@@ -8,6 +13,29 @@ pub const Analyze = struct {
     pub fn mp3_analyze(source_file: []const u8) !void {
         const file = try std.fs.cwd().openFile(source_file, .{});
         defer file.close();
+
+        var fomart_ctx: ?*c.AVFormatContext = null;
+
+        const result = c.avformat_open_input(&fomart_ctx, @ptrCast(source_file), null, null);
+        if (result < 0 or fomart_ctx == null) {
+            return error.CannotOpenFile;
+        }
+        defer c.avformat_close_input(&fomart_ctx);
+
+        if (c.avformat_find_stream_info(fomart_ctx, null) < 0) {
+            return error.CannotFindStreamInfo;
+        }
+
+        if (fomart_ctx.?.metadata) |data| {
+            var entry: ?*c.AVDictionaryEntry = null;
+            while (c.av_dict_get(data, "", entry, c.AV_DICT_IGNORE_SUFFIX)) |e| {
+                entry = e;
+                std.debug.print("{s}: {s}\n", .{
+                    std.mem.span(entry.?.key),
+                    std.mem.span(entry.?.value),
+                });
+            }
+        }
 
         var header: [10]u8 = undefined;
         _ = try file.read(&header);
@@ -93,6 +121,19 @@ pub const Analyze = struct {
                         }
 
                         std.debug.print("Flags: [frames: {}, bytes: {}, toc: {}, quality: {}]\n", .{ has_frames, has_bytes, has_toc, has_quality });
+                        break;
+                    } else if (frame_header[0] == 'I' and
+                        frame_header[1] == 'n' and
+                        frame_header[2] == 'f' and
+                        frame_header[3] == 'o')
+                    {
+                        std.debug.print("Found Info header\n", .{});
+                        var info: [4]u8 = undefined;
+                        _ = try file.read(&info);
+                        const version = info[0];
+                        const flags = info[1];
+                        const size_cbr = (@as(u32, info[2]) << 8) | @as(u32, info[3]);
+                        std.debug.print("Version: {}, Flags: {}, Size: {}\n", .{ version, flags, size_cbr });
                         break;
                     }
 
