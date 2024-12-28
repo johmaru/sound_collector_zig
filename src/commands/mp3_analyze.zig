@@ -40,7 +40,7 @@ pub const Analyze = struct {
         var header: [10]u8 = undefined;
         _ = try file.read(&header);
 
-        std.debug.print("Header: {any}\n", .{header});
+        //std.debug.print("Header: {any}\n", .{header});
 
         if (check_id3v2_header(&header)) {
             if (std.mem.eql(u8, header[0..3], "ID3")) {
@@ -52,11 +52,11 @@ pub const Analyze = struct {
                 std.debug.print("ID3 end position: {}\n", .{id3_end});
 
                 const pos = try file.getPos();
-                std.debug.print("Start position: {}\n", .{pos});
+                //   std.debug.print("Start position: {}\n", .{pos});
 
                 var frame_header: [4]u8 = undefined;
                 _ = try file.read(&frame_header);
-                std.debug.print("Frame header bytes: {any}\n", .{frame_header});
+                //  std.debug.print("Frame header bytes: {any}\n", .{frame_header});
 
                 const layer_bits = (frame_header[1] & 0x06) >> 1;
                 const layer: u8 = switch (layer_bits) {
@@ -68,24 +68,24 @@ pub const Analyze = struct {
                 const sample_frame = check_sample_frame(layer);
                 std.debug.print("Layer is {}\n", .{layer});
 
-                const high_bits = (frame_header[2] & 0xF0) >> 4;
-                std.debug.print("Bitrate is {}\n", .{bitrate[high_bits]});
+                // const high_bits = (frame_header[2] & 0xF0) >> 4;
+                // std.debug.print("Bitrate is {}\n", .{bitrate[high_bits]});
                 const low_bits = (frame_header[2] & 0x0C) >> 2;
                 std.debug.print("Samplerate is {}\n", .{samplerate[low_bits]});
 
                 var debug_buffer: [16]u8 = undefined;
                 try file.seekTo(pos);
                 _ = try file.read(&debug_buffer);
-                std.debug.print("First 16 bytes at pos {}: ", .{pos});
-                for (debug_buffer) |byte| {
-                    std.debug.print("{x:0>2} ", .{byte});
-                }
-                std.debug.print("\n", .{});
+                //  std.debug.print("First 16 bytes at pos {}: ", .{pos});
+                // for (debug_buffer) |byte| {
+                //  std.debug.print("{x:0>2} ", .{byte});
+                // }
+                // std.debug.print("\n", .{});
 
                 try file.seekTo(pos);
                 while (true) {
                     _ = try file.read(&frame_header);
-                    std.debug.print("Checking at pos {}: [0x{x:0>2}, 0x{x:0>2}, 0x{x:0>2}, 0x{x:0>2}]\n", .{ try file.getPos(), frame_header[0], frame_header[1], frame_header[2], frame_header[3] });
+                    // std.debug.print("Checking at pos {}: [0x{x:0>2}, 0x{x:0>2}, 0x{x:0>2}, 0x{x:0>2}]\n", .{ try file.getPos(), frame_header[0], frame_header[1], frame_header[2], frame_header[3] });
 
                     if (frame_header[0] == 'X' and
                         frame_header[1] == 'i' and
@@ -142,8 +142,8 @@ pub const Analyze = struct {
                 }
                 _ = try file.read(&frame_header);
                 try file.seekBy(1);
-                const xing_skip = try file.getPos();
-                std.debug.print("Xing skip location {}: [0x{x:0>2}, 0x{x:0>2}, 0x{x:0>2}, 0x{x:0>2}]\n", .{ xing_skip, frame_header[0], frame_header[1], frame_header[2], frame_header[3] });
+                // const xing_skip = try file.getPos();
+                //   std.debug.print("Xing skip location {}: [0x{x:0>2}, 0x{x:0>2}, 0x{x:0>2}, 0x{x:0>2}]\n", .{ xing_skip, frame_header[0], frame_header[1], frame_header[2], frame_header[3] });
             } else {
                 try file.seekTo(0);
             }
